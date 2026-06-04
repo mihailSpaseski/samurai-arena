@@ -5,6 +5,8 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
 
+    [SerializeField] private BoxCollider dashHitbox;
+
     [Header("References")]
     [SerializeField] private FixedJoystick joystick;
     [SerializeField] private CharacterController characterController;
@@ -17,10 +19,20 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 0.8f;
 
+    [SerializeField] private DashIndicatorUI dashIndicator;
     private bool isDashing;
+    private Rigidbody dashHitboxRb;
     private float dashCooldownTimer;
+    private DashDamage dashDamage;
+
 
     private Vector3 moveDirection;
+
+    private void Start()
+    {
+        dashHitboxRb = dashHitbox.GetComponent<Rigidbody>();
+        dashDamage = dashHitbox.GetComponent<DashDamage>();
+    }
 
     private void Update()
     {
@@ -39,23 +51,35 @@ public class PlayerController : MonoBehaviour
         if (dashCooldownTimer > 0)
         {
             dashCooldownTimer -= Time.deltaTime;
+            dashIndicator?.SetReady(false);
+        }
+        else
+        {
+            dashIndicator?.SetReady(true);
         }
     }
 
     private void HandleSwipeDash()
     {
-        if (swipeInput.SwipeDetected && dashCooldownTimer <= 0)
+        if (!swipeInput.SwipeDetected)
+            return;
+
+        // Ignore swipe completely during cooldown
+        if (dashCooldownTimer > 0 || isDashing)
         {
-            Vector3 dashDirection = new Vector3(
-                swipeInput.SwipeDirection.x,
-                0f,
-                swipeInput.SwipeDirection.y
-            );
-
-            StartCoroutine(Dash(dashDirection));
-
             swipeInput.ResetSwipe();
+            return;
         }
+
+        Vector3 dashDirection = new Vector3(
+            swipeInput.SwipeDirection.x,
+            0f,
+            swipeInput.SwipeDirection.y
+        );
+
+        StartCoroutine(Dash(dashDirection));
+
+        swipeInput.ResetSwipe();
     }
 
     private void HandleMovement()
@@ -100,31 +124,35 @@ public class PlayerController : MonoBehaviour
     private System.Collections.IEnumerator Dash(Vector3 direction)
     {
         isDashing = true;
+        if (direction != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(direction);
+        dashDamage.ResetHits();
+        dashHitbox.enabled = true;
 
         float elapsedTime = 0f;
-
         Vector3 startPosition = transform.position;
-        Vector3 targetPosition =
-            startPosition + direction.normalized * dashDistance;
+        Vector3 targetPosition = startPosition + direction.normalized * dashDistance;
+
+        characterController.enabled = false; // disable once
 
         while (elapsedTime < dashDuration)
         {
             elapsedTime += Time.deltaTime;
-
             float t = elapsedTime / dashDuration;
+            transform.position = Vector3.Lerp(startPosition, targetPosition, t);
 
-            Vector3 movePosition =
-                Vector3.Lerp(startPosition, targetPosition, t);
-
-            characterController.enabled = false;
-            transform.position = movePosition;
-            characterController.enabled = true;
+            // sync hitbox position explicitly via Rigidbody
+            dashHitboxRb.MovePosition(transform.position);
 
             yield return null;
         }
 
-        dashCooldownTimer = dashCooldown;
+        characterController.enabled = true; // re-enable once
 
+        dashCooldownTimer = dashCooldown;
+        dashHitbox.enabled = false;
         isDashing = false;
     }
+
+    // In DashDamage
 }
