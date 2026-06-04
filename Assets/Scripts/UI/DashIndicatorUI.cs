@@ -1,47 +1,38 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class DashIndicatorUI : MonoBehaviour
 {
     [SerializeField] private Image indicatorImage;
+    [SerializeField] private TMP_Text indicatorText;
     [SerializeField] private Color readyColor = new Color(0.27f, 0.53f, 1f);
     [SerializeField] private Color cooldownColor = new Color(0.3f, 0.3f, 0.3f);
-    [SerializeField] private float flashSpeed = 4f;
 
-    private bool isReady;
-    private bool wasReady;
-    private float flashTimer;
+    private bool isReady = true;
 
-    public void SetReady(bool ready)
+    public void SetReadyTrue()
     {
-        isReady = ready;
+        isReady = true;
+    }
+    public void SetReadyFalse()
+    {
+        isReady = false;
+    }
+
+    public void SetText(float x)
+    {
+        indicatorText.text = x.ToString("F2");
     }
 
     private void Update()
     {
-        if (isReady)
+        if(isReady)
         {
-            // just became ready — flash
-            if (!wasReady)
-            {
-                flashTimer = 1f;
-                wasReady = true;
-            }
-
-            if (flashTimer > 0)
-            {
-                flashTimer -= Time.deltaTime * flashSpeed;
-                float t = Mathf.PingPong(flashTimer * flashSpeed, 1f);
-                indicatorImage.color = Color.Lerp(readyColor, Color.white, t);
-            }
-            else
-            {
-                indicatorImage.color = readyColor;
-            }
+            indicatorImage.color = readyColor;
         }
         else
         {
-            wasReady = false;
             indicatorImage.color = cooldownColor;
         }
     }

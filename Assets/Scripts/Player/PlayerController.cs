@@ -48,14 +48,26 @@ public class PlayerController : MonoBehaviour
 
     private void HandleDashCooldown()
     {
-        if (dashCooldownTimer > 0)
+
+        if (dashCooldownTimer >= 0.0)
         {
             dashCooldownTimer -= Time.deltaTime;
-            dashIndicator?.SetReady(false);
-        }
-        else
-        {
-            dashIndicator?.SetReady(true);
+
+            if (dashCooldownTimer < 0.0)
+            {
+                dashCooldownTimer = 0;
+            }
+
+            if (dashCooldownTimer > 0.0)
+            {
+                dashIndicator.SetReadyFalse();
+            }
+            else
+            {
+                dashCooldownTimer = 0;
+                dashIndicator.SetReadyTrue();
+            }
+            dashIndicator.SetText(dashCooldownTimer);
         }
     }
 
@@ -153,6 +165,4 @@ public class PlayerController : MonoBehaviour
         dashHitbox.enabled = false;
         isDashing = false;
     }
-
-    // In DashDamage
 }
