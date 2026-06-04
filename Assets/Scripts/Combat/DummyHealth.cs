@@ -3,7 +3,7 @@ using UnityEngine;
 public class DummyHealth : MonoBehaviour
 {
     [SerializeField] private int maxHealth = 2;
-    [SerializeField] private HealthBarUI healthBar;  // assign in Inspector
+    [SerializeField] private HealthBarUI healthBar;
     [SerializeField] private Vector3 healthBarOffset = new Vector3(0, 2.2f, 0);
 
     private int currentHealth;
@@ -32,7 +32,6 @@ public class DummyHealth : MonoBehaviour
 
     private void LateUpdate()
     {
-        // keep bar above head as dummy moves
         if (healthBar != null)
             healthBar.transform.position = transform.position + healthBarOffset;
     }

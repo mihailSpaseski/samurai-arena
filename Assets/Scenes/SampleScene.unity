@@ -959,6 +959,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5474099960992476602, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 1319878679}
     - target: {fileID: 6453786348977169712, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
       propertyPath: m_IsTrigger
       value: 0
@@ -1455,10 +1459,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6453786348977169712, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
-      propertyPath: m_IsTrigger
-      value: 0
-      objectReference: {fileID: 0}
+    - target: {fileID: 5474099960992476602, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 1319878679}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1780,10 +1784,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4025050962975798937, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6453786348977169712, guid: 0e8c9b820ea2bbe4d8a356d6a67ffc5c, type: 3}
-      propertyPath: m_IsTrigger
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
