@@ -4,7 +4,7 @@ using UnityEngine;
 public class DashDamage : MonoBehaviour
 {
     [SerializeField] private int damage = 1;
-
+    [SerializeField] private GameObject bloodSplatterPrefab;
     private HashSet<Collider> hitTargets = new();
 
     private void OnEnable()
@@ -31,6 +31,15 @@ public class DashDamage : MonoBehaviour
             Debug.Log("Dummy hit!");
 
             dummy.TakeDamage(damage);
+
+            if (bloodSplatterPrefab != null)
+            {
+                Instantiate(
+                    bloodSplatterPrefab,
+                    other.ClosestPoint(transform.position),
+                    Quaternion.identity
+                );
+            }
         }
     }
 
@@ -39,7 +48,7 @@ public class DashDamage : MonoBehaviour
         hitTargets.Clear();
     }
 
-     public void ResetHits()
+    public void ResetHits()
     {
         hitTargets.Clear();
     }

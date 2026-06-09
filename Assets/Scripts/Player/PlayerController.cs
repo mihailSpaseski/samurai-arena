@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
+
     [SerializeField] private float moveSpeed = 5f;
 
     [SerializeField] private BoxCollider dashHitbox;
@@ -20,6 +21,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashCooldown = 0.8f;
 
     [SerializeField] private DashIndicatorUI dashIndicator;
+
+    [Header("Effects")]
+    [SerializeField] private GameObject dashTrailPrefab;
+
     private bool isDashing;
     private Rigidbody dashHitboxRb;
     private float dashCooldownTimer;
@@ -140,6 +145,9 @@ public class PlayerController : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
         dashDamage.ResetHits();
         dashHitbox.enabled = true;
+
+        if (dashTrailPrefab != null)
+            Instantiate(dashTrailPrefab, transform.position, transform.rotation);
 
         float elapsedTime = 0f;
         Vector3 startPosition = transform.position;
