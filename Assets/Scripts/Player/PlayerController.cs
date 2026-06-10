@@ -33,10 +33,29 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 moveDirection;
 
-    private void Start()
+    public void InitialiseLocalPlayer()
     {
+        if (joystick == null)
+            joystick = FindFirstObjectByType<FixedJoystick>();
+
+        if (swipeInput == null)
+            swipeInput = FindFirstObjectByType<SwipeInput>();
+
+        if (dashIndicator == null)
+            dashIndicator = FindFirstObjectByType<DashIndicatorUI>();
+
         dashHitboxRb = dashHitbox.GetComponent<Rigidbody>();
         dashDamage = dashHitbox.GetComponent<DashDamage>();
+    }
+
+    private void Start()
+    {
+        // only self-initialise if not controlled by NetworkedPlayer
+        if (GetComponent<NetworkedPlayer>() == null)
+        {
+            dashHitboxRb = dashHitbox.GetComponent<Rigidbody>();
+            dashDamage = dashHitbox.GetComponent<DashDamage>();
+        }
     }
 
     private void Update()
@@ -143,6 +162,7 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
         if (direction != Vector3.zero)
             transform.rotation = Quaternion.LookRotation(direction);
+
         dashDamage.ResetHits();
         dashHitbox.enabled = true;
 
@@ -153,24 +173,69 @@ public class PlayerController : MonoBehaviour
         Vector3 startPosition = transform.position;
         Vector3 targetPosition = startPosition + direction.normalized * dashDistance;
 
-        characterController.enabled = false; // disable once
+        characterController.enabled = false;
 
         while (elapsedTime < dashDuration)
         {
             elapsedTime += Time.deltaTime;
             float t = elapsedTime / dashDuration;
             transform.position = Vector3.Lerp(startPosition, targetPosition, t);
-
-            // sync hitbox position explicitly via Rigidbody
             dashHitboxRb.MovePosition(transform.position);
+
+            // check for hits each frame using overlap
+            CheckDashHits();
 
             yield return null;
         }
 
-        characterController.enabled = true; // re-enable once
-
+        characterController.enabled = true;
         dashCooldownTimer = dashCooldown;
         dashHitbox.enabled = false;
         isDashing = false;
+    }
+
+    private void CheckDashHits()
+    {
+        Collider[] hits = Physics.OverlapBox(
+            transform.position,
+            new Vector3(0.75f, 1f, 0.75f),
+            transform.rotation
+        );
+
+        Debug.Log($"OverlapBox found {hits.Length} colliders");
+
+        foreach (Collider hit in hits)
+        {
+            Debug.Log($"Hit: {hit.gameObject.name} root: {hit.transform.root.name}");
+
+            if (hit.transform.root == transform.root)
+            {
+                Debug.Log("Skipped - same root");
+                continue;
+            }
+
+            if (dashDamage.AlreadyHit(hit))
+            {
+                Debug.Log("Skipped - already hit");
+                continue;
+            }
+
+            dashDamage.RegisterHit(hit);
+
+            NetworkedHealth networkedHealth =
+                hit.GetComponentInParent<NetworkedHealth>();
+            Debug.Log($"NetworkedHealth found: {networkedHealth != null}");
+
+            DummyHealth dummy = hit.GetComponentInParent<DummyHealth>();
+            Debug.Log($"DummyHealth found: {dummy != null}");
+
+            if (networkedHealth != null)
+            {
+                networkedHealth.TakeDamage(dashDamage.Damage);
+                continue;
+            }
+
+            dummy?.TakeDamage(dashDamage.Damage);
+        }
     }
 }

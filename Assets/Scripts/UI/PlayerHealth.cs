@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour
@@ -5,6 +6,9 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private int maxHealth = 6;
     [SerializeField] private HealthBarUI healthBar;
     [SerializeField] private Vector3 healthBarOffset = new Vector3(0, 2.5f, 0);
+
+    public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
 
     private int currentHealth;
 
@@ -30,6 +34,12 @@ public class PlayerHealth : MonoBehaviour
             Die();
     }
 
+    public void UpdateHealthBar(int current, int max)
+    {
+        if (healthBar != null)
+            healthBar.UpdateHealth(current, max);
+    }
+
     private void LateUpdate()
     {
         if (healthBar != null)
@@ -38,6 +48,17 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
-        Destroy(gameObject);
+        NetworkedHealth networkedHealth = GetComponent<NetworkedHealth>();
+
+        if (networkedHealth != null)
+        {
+            // tell all clients to destroy this player
+            GetComponent<PhotonView>().RPC("RPC_Die", RpcTarget.All);
+        }
+        else
+        {
+            // local dummy, just destroy
+            Destroy(gameObject);
+        }
     }
 }
