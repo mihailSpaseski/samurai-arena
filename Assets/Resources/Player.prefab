@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3426495355361109013}
   - component: {fileID: 3733775426620098235}
   - component: {fileID: 831699623870111703}
+  - component: {fileID: -480714974807098333}
   - component: {fileID: 5587666539938268160}
   m_Layer: 0
   m_Name: Player
@@ -197,6 +198,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkedPlayer
   playerController: {fileID: 8033007108996273006}
+  playerHealth: {fileID: 3733775426620098235}
+--- !u!114 &-480714974807098333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2915236804231881675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1601e67b3f26ad43a285bc6265e5741, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkedHealth
   playerHealth: {fileID: 3733775426620098235}
 --- !u!114 &5587666539938268160
 MonoBehaviour:

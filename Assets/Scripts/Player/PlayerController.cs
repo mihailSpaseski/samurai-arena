@@ -198,36 +198,31 @@ public class PlayerController : MonoBehaviour
     {
         Collider[] hits = Physics.OverlapBox(
             transform.position,
-            new Vector3(0.75f, 1f, 0.75f),
-            transform.rotation
+            new Vector3(1.5f, 1f, 1.5f),
+            transform.rotation,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Collide
         );
-
-        Debug.Log($"OverlapBox found {hits.Length} colliders");
 
         foreach (Collider hit in hits)
         {
-            Debug.Log($"Hit: {hit.gameObject.name} root: {hit.transform.root.name}");
-
-            if (hit.transform.root == transform.root)
-            {
-                Debug.Log("Skipped - same root");
+            // compare actual GameObject instance not name
+            if (hit.transform.root.gameObject == transform.root.gameObject)
                 continue;
-            }
 
-            if (dashDamage.AlreadyHit(hit))
-            {
-                Debug.Log("Skipped - already hit");
+            GameObject target = hit.transform.root.gameObject;
+
+
+            if (dashDamage.AlreadyHit(target))
                 continue;
-            }
 
-            dashDamage.RegisterHit(hit);
+            dashDamage.RegisterHit(target);
 
             NetworkedHealth networkedHealth =
                 hit.GetComponentInParent<NetworkedHealth>();
-            Debug.Log($"NetworkedHealth found: {networkedHealth != null}");
-
             DummyHealth dummy = hit.GetComponentInParent<DummyHealth>();
-            Debug.Log($"DummyHealth found: {dummy != null}");
+
+            Debug.Log($"Valid hit on: {hit.transform.root.name} | NetworkedHealth: {networkedHealth != null}");
 
             if (networkedHealth != null)
             {

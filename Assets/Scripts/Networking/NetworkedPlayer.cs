@@ -40,15 +40,25 @@ public class NetworkedPlayer : MonoBehaviourPun, IPunObservable
         if (!photonView.IsMine)
         {
             float distance = Vector3.Distance(transform.position, networkPosition);
-
-            // if far away (dashing) snap faster
             float speed = distance > 2f ? 50f : 15f;
 
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                networkPosition,
-                Time.deltaTime * speed
-            );
+            // use CharacterController.Move instead of transform directly
+            // so the physics collider actually updates
+            CharacterController cc = GetComponent<CharacterController>();
+            if (cc != null && cc.enabled)
+            {
+                Vector3 delta = networkPosition - transform.position;
+                cc.Move(delta * Time.deltaTime * speed);
+            }
+            else
+            {
+                transform.position = Vector3.MoveTowards(
+                    transform.position,
+                    networkPosition,
+                    Time.deltaTime * speed
+                );
+            }
+
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation,
                 networkRotation,
