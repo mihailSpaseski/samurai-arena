@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -226,7 +227,8 @@ public class PlayerController : MonoBehaviour
 
             if (networkedHealth != null)
             {
-                networkedHealth.TakeDamage(dashDamage.Damage);
+                int myViewID = GetComponent<PhotonView>().ViewID;
+                networkedHealth.TakeDamage(dashDamage.Damage, myViewID);
                 continue;
             }
 

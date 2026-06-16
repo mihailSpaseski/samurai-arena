@@ -5,8 +5,18 @@ public class PlayerSpawner : MonoBehaviourPunCallbacks
 {
     [SerializeField] private GameObject playerPrefab;
 
+    private void Start()
+    {
+        // already in room when scene loads — spawn immediately
+        if (PhotonNetwork.InRoom)
+        {
+            SpawnLocalPlayer();
+        }
+    }
+
     public override void OnJoinedRoom()
     {
+        // fallback if joining room after scene loads
         SpawnLocalPlayer();
     }
 
@@ -14,7 +24,7 @@ public class PlayerSpawner : MonoBehaviourPunCallbacks
     {
         if (playerPrefab == null)
         {
-            Debug.LogError("PlayerSpawner: playerPrefab is not assigned!");
+            Debug.LogError("PlayerSpawner: playerPrefab not assigned!");
             return;
         }
 

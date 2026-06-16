@@ -5,17 +5,26 @@ public class NetworkedHealth : MonoBehaviourPun
 {
     [SerializeField] private PlayerHealth playerHealth;
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, int attackerViewID)
     {
-        photonView.RPC("RPC_TakeDamage", photonView.Owner, damage);
+        photonView.RPC("RPC_TakeDamage", photonView.Owner, damage, attackerViewID);
     }
 
     [PunRPC]
-    private void RPC_TakeDamage(int damage)
+    private void RPC_TakeDamage(int damage, int attackerViewID)
     {
         playerHealth.TakeDamage(damage);
 
-        // sync health bar to all clients after taking damage
+        PhotonView attackerView = PhotonView.Find(attackerViewID);
+        if (attackerView != null)
+        {
+            PlayerStats attackerStats = attackerView.GetComponent<PlayerStats>();
+            attackerStats?.AddDamage(damage);
+
+            if (playerHealth.CurrentHealth <= 0)
+                attackerStats?.AddKill();
+        }
+
         photonView.RPC("RPC_SyncHealthBar", RpcTarget.All,
             playerHealth.CurrentHealth, playerHealth.MaxHealth);
     }
@@ -27,7 +36,7 @@ public class NetworkedHealth : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void RPC_Die()
+    public void RPC_Die()
     {
         if (photonView.IsMine)
             PhotonNetwork.Destroy(gameObject);

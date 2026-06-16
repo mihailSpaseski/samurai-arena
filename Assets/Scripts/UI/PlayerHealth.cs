@@ -52,12 +52,22 @@ public class PlayerHealth : MonoBehaviour
 
         if (networkedHealth != null)
         {
-            // tell all clients to destroy this player
+            if (GetComponent<PhotonView>().IsMine)
+            {
+                PlayerStats stats = GetComponent<PlayerStats>();
+
+                if (DeathScreenUI.Instance != null && stats != null)
+                    DeathScreenUI.Instance.ShowDeathScreen(
+                        stats.DamageDealt,
+                        stats.Kills
+                    );
+            }
+
+            // RPC_Die lives in NetworkedHealth — call it through photonView
             GetComponent<PhotonView>().RPC("RPC_Die", RpcTarget.All);
         }
         else
         {
-            // local dummy, just destroy
             Destroy(gameObject);
         }
     }

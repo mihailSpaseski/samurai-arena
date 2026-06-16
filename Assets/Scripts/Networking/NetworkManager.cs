@@ -1,15 +1,10 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 
 public class NetworkManager : MonoBehaviourPunCallbacks
 {
     public static NetworkManager Instance { get; private set; }
-
-    [Header("Room Settings")]
-    [SerializeField] private int maxPlayers = 6;
-    [SerializeField] private string gameSceneName = "SampleScene";
 
     private void Awake()
     {
@@ -21,80 +16,44 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-    }
+        PhotonNetwork.AutomaticallySyncScene = true; // ← add here too
 
-    private void Start()
-    {
-        Connect();
+        if (string.IsNullOrEmpty(PhotonNetwork.NickName))
+            PhotonNetwork.NickName = "Player " + Random.Range(1000, 9999);
     }
 
     public void Connect()
     {
-        Debug.Log("Connecting to Photon...");
-        PhotonNetwork.AutomaticallySyncScene = true;
+        if (PhotonNetwork.IsConnected) return;
+        PhotonNetwork.NickName = "Player " + Random.Range(1000, 9999);
+        PhotonNetwork.AutomaticallySyncScene = true; // ← must be BEFORE ConnectUsingSettings
         PhotonNetwork.ConnectUsingSettings();
+        Debug.Log("Connecting to Photon...");
     }
 
-    // ── Photon Callbacks ──────────────────────────────────────────
-
-    public override void OnConnectedToMaster()
+    // call this when returning to lobby from game
+    public void ReturnToLobby()
     {
-        Debug.Log("Connected to Master. Joining lobby...");
+        if (PhotonNetwork.InRoom)
+            PhotonNetwork.LeaveRoom();
+        else
+            PhotonNetwork.ConnectUsingSettings();
+    }
+
+    public override void OnLeftRoom()
+    {
+        // after leaving room we're back on Master, now join lobby
         PhotonNetwork.JoinLobby();
     }
 
     public override void OnJoinedLobby()
     {
-        Debug.Log("Joined Lobby — joining room...");
-        JoinOrCreateRoom(); // auto join for testing
-    }
-
-    public void JoinOrCreateRoom()
-    {
-        RoomOptions options = new RoomOptions
-        {
-            MaxPlayers = (byte)maxPlayers,
-            IsVisible = true,
-            IsOpen = true
-        };
-
-        PhotonNetwork.JoinOrCreateRoom("FFA_Room", options, TypedLobby.Default);
-    }
-
-    public override void OnJoinedRoom()
-    {
-        Debug.Log($"Joined room. Players: {PhotonNetwork.CurrentRoom.PlayerCount}/{maxPlayers}");
-    }
-
-    public override void OnPlayerEnteredRoom(Player newPlayer)
-    {
-        Debug.Log($"Player joined: {newPlayer.NickName}. Total: {PhotonNetwork.CurrentRoom.PlayerCount}");
-
-        // start game when room is full
-        if (PhotonNetwork.IsMasterClient &&
-            PhotonNetwork.CurrentRoom.PlayerCount == maxPlayers)
-        {
-            StartGame();
-        }
+        Debug.Log("Joined lobby — ready for matchmaking");
     }
 
     public override void OnDisconnected(DisconnectCause cause)
     {
         Debug.LogWarning($"Disconnected: {cause}");
-        SceneManager.LoadScene("MainMenu");
-    }
-
-    public override void OnJoinRoomFailed(short returnCode, string message)
-    {
-        Debug.LogWarning($"Join failed: {message}. Creating new room...");
-        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = (byte)maxPlayers });
-    }
-
-    private void StartGame()
-    {
-        Debug.Log("Room full — loading game scene.");
-        PhotonNetwork.CurrentRoom.IsOpen = false;
-        PhotonNetwork.CurrentRoom.IsVisible = false;
-        PhotonNetwork.LoadLevel(gameSceneName);
+        Connect();
     }
 }
