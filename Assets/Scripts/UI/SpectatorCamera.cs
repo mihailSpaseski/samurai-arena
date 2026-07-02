@@ -4,7 +4,7 @@ public class SpectatorCamera : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 10f;
     [SerializeField] private float fastMoveSpeed = 25f;
-    [SerializeField] private float rotationSpeed = 2f;
+    [SerializeField] private float rotationSpeed = 0.2f;
 
     private bool isActive = false;
     private float yaw = 0f;
@@ -29,7 +29,7 @@ public class SpectatorCamera : MonoBehaviour
         // rotation — touch/mouse
         yaw += Input.GetAxis("Mouse X") * rotationSpeed;
         pitch -= Input.GetAxis("Mouse Y") * rotationSpeed;
-        pitch = Mathf.Clamp(pitch, -80f, 80f);
+        pitch = Mathf.Clamp(pitch, -20f, 20f);
         transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
 
         // movement
@@ -43,8 +43,8 @@ public class SpectatorCamera : MonoBehaviour
         );
 
         // up/down
-        if (Input.GetKey(KeyCode.E)) move.y = 1f;
-        if (Input.GetKey(KeyCode.Q)) move.y = -1f;
+        if (Input.GetKey(KeyCode.E)) move.y = 0.1f;
+        if (Input.GetKey(KeyCode.Q)) move.y = -0.1f;
 
         transform.position += transform.TransformDirection(move) 
             * speed * Time.deltaTime;

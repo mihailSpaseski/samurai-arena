@@ -78,7 +78,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
         if (statusText != null)
         {
-            if (count < minPlayers)
+            if (count <= minPlayers)
                 statusText.text = $"Waiting for players... ({count}/{minPlayers} minimum)";
             else if (PhotonNetwork.IsMasterClient)
                 statusText.text = "Press START when ready!";
@@ -99,6 +99,13 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
         Debug.Log("Sending RPC_StartCountdown to all");
         photonView.RPC("RPC_StartCountdown", RpcTarget.All);
+    }
+
+    public void OnMainMenuPressed()
+    {
+        PhotonNetwork.LeaveRoom();
+        PhotonNetwork.Disconnect();
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
     [PunRPC]

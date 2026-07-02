@@ -6,11 +6,18 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private int maxHealth = 6;
     [SerializeField] private HealthBarUI healthBar;
     [SerializeField] private Vector3 healthBarOffset = new Vector3(0, 2.5f, 0);
+    [SerializeField] private Animator animator;
 
     public int CurrentHealth => currentHealth;
     public int MaxHealth => maxHealth;
 
     private int currentHealth;
+    private bool isInvulnerable = false;
+
+    public void SetInvulnerable(bool state)
+    {
+        isInvulnerable = state;
+    }
 
     private void Start()
     {
@@ -25,6 +32,9 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        if (isInvulnerable)
+            return;
+
         currentHealth -= damage;
 
         if (healthBar != null)
@@ -50,21 +60,34 @@ public class PlayerHealth : MonoBehaviour
     {
         NetworkedHealth networkedHealth = GetComponent<NetworkedHealth>();
 
+        if (animator != null)
+            animator.SetBool("IsDead", true);
+
         if (networkedHealth != null)
         {
-            if (GetComponent<PhotonView>().IsMine)
+            PhotonView pv = GetComponent<PhotonView>();
+
+            if (pv.IsMine)
             {
                 PlayerStats stats = GetComponent<PlayerStats>();
 
                 if (DeathScreenUI.Instance != null && stats != null)
+                {
+                    Debug.Log("DMG: " + stats.DamageDealt);
                     DeathScreenUI.Instance.ShowDeathScreen(
                         stats.DamageDealt,
                         stats.Kills
                     );
+                }
+
+                // report this death to GameManager
+                GameManager.Instance?.ReportDeath(pv.Owner.ActorNumber);
+
+                if (GameManager.Instance == null)
+                    Debug.LogError("GameManager.Instance is NULL!");
             }
 
-            // RPC_Die lives in NetworkedHealth — call it through photonView
-            GetComponent<PhotonView>().RPC("RPC_Die", RpcTarget.All);
+            pv.RPC("RPC_Die", RpcTarget.All);
         }
         else
         {

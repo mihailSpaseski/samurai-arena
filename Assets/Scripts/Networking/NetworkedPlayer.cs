@@ -5,7 +5,9 @@ public class NetworkedPlayer : MonoBehaviourPun, IPunObservable
 {
     [SerializeField] private PlayerController playerController;
     [SerializeField] private PlayerHealth playerHealth;
+    [SerializeField] private Animator animator;
 
+    private float networkSpeed;
     private Vector3 networkPosition;
     private Quaternion networkRotation;
     private float lag;
@@ -27,12 +29,21 @@ public class NetworkedPlayer : MonoBehaviourPun, IPunObservable
             FindFirstObjectByType<CameraFollow>()?.SetTarget(transform);
 
             GetComponentInChildren<Camera>()?.gameObject.SetActive(true);
+
+            photonView.RPC("RPC_SetSkin", RpcTarget.AllBuffered, UserProfile.SelectedSkinID);
+
         }
         else
         {
             playerController.enabled = false;
             GetComponentInChildren<Camera>()?.gameObject.SetActive(false);
         }
+    }
+
+    [PunRPC]
+    private void RPC_SetSkin(int skinID)
+    {
+        GetComponent<PlayerModelSwitcher>()?.ApplySkin(skinID);
     }
 
     private void Update()
@@ -64,6 +75,9 @@ public class NetworkedPlayer : MonoBehaviourPun, IPunObservable
                 networkRotation,
                 Time.deltaTime * 360f
             );
+
+            if (animator != null)
+                animator.SetFloat("Speed", networkSpeed);
         }
     }
 
@@ -75,12 +89,14 @@ public class NetworkedPlayer : MonoBehaviourPun, IPunObservable
             // we own this player — send position and rotation
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
+            stream.SendNext(animator.GetFloat("Speed"));
         }
         else
         {
             // remote player — receive and store
             networkPosition = (Vector3)stream.ReceiveNext();
             networkRotation = (Quaternion)stream.ReceiveNext();
+            networkSpeed = (float)stream.ReceiveNext();
 
             // account for network lag
             lag = Mathf.Abs((float)(PhotonNetwork.Time - info.SentServerTime));

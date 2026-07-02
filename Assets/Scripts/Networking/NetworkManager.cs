@@ -16,19 +16,29 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        PhotonNetwork.AutomaticallySyncScene = true; // ← add here too
+        PhotonNetwork.AutomaticallySyncScene = true;
 
-        if (string.IsNullOrEmpty(PhotonNetwork.NickName))
-            PhotonNetwork.NickName = "Player " + Random.Range(1000, 9999);
+        // always sync username in case profile was just created
+        if (UserProfile.HasProfile())
+            PhotonNetwork.NickName = UserProfile.GetUsername();
     }
 
     public void Connect()
     {
-        if (PhotonNetwork.IsConnected) return;
-        PhotonNetwork.NickName = "Player " + Random.Range(1000, 9999);
-        PhotonNetwork.AutomaticallySyncScene = true; // ← must be BEFORE ConnectUsingSettings
+        // set nickname immediately regardless
+        PhotonNetwork.NickName = UserProfile.HasProfile()
+            ? UserProfile.GetUsername()
+            : "Player " + Random.Range(1000, 9999);
+
+        if (PhotonNetwork.IsConnected)
+        {
+            // already connected, nickname is set above, nothing else needed
+            return;
+        }
+
+        PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.ConnectUsingSettings();
-        Debug.Log("Connecting to Photon...");
+        Debug.Log($"Connecting as: {PhotonNetwork.NickName}");
     }
 
     // call this when returning to lobby from game

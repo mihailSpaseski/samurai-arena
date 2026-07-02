@@ -13,20 +13,26 @@ public class NetworkedHealth : MonoBehaviourPun
     [PunRPC]
     private void RPC_TakeDamage(int damage, int attackerViewID)
     {
+        int damageDone = Mathf.Min(damage, playerHealth.CurrentHealth);
+
         playerHealth.TakeDamage(damage);
 
         PhotonView attackerView = PhotonView.Find(attackerViewID);
         if (attackerView != null)
         {
             PlayerStats attackerStats = attackerView.GetComponent<PlayerStats>();
-            attackerStats?.AddDamage(damage);
+            attackerStats?.AddDamage(damageDone);
 
             if (playerHealth.CurrentHealth <= 0)
                 attackerStats?.AddKill();
         }
 
-        photonView.RPC("RPC_SyncHealthBar", RpcTarget.All,
-            playerHealth.CurrentHealth, playerHealth.MaxHealth);
+        // only sync health bar if player is still alive
+        if (playerHealth.CurrentHealth > 0)
+        {
+            photonView.RPC("RPC_SyncHealthBar", RpcTarget.All,
+                playerHealth.CurrentHealth, playerHealth.MaxHealth);
+        }
     }
 
     [PunRPC]

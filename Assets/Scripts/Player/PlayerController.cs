@@ -1,18 +1,16 @@
+using System.Collections;
 using Photon.Pun;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-
     [SerializeField] private float moveSpeed = 5f;
-
     [SerializeField] private BoxCollider dashHitbox;
 
     [Header("References")]
     [SerializeField] private FixedJoystick joystick;
     [SerializeField] private CharacterController characterController;
-
     [SerializeField] private float rotationSpeed = 10f;
 
     [Header("Dash")]
@@ -20,22 +18,31 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashDistance = 4f;
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 0.8f;
-
     [SerializeField] private DashIndicatorUI dashIndicator;
 
     [Header("Effects")]
     [SerializeField] private GameObject dashTrailPrefab;
 
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
+
     private bool isDashing;
     private Rigidbody dashHitboxRb;
     private float dashCooldownTimer;
     private DashDamage dashDamage;
-
-
     private Vector3 moveDirection;
+
+    // ── Initialisation ─────────────────────────────────
 
     public void InitialiseLocalPlayer()
     {
+        StartCoroutine(InitialiseNextFrame());
+    }
+
+    private IEnumerator InitialiseNextFrame()
+    {
+        yield return null; // wait one frame for scene to fully load
+
         if (joystick == null)
             joystick = FindFirstObjectByType<FixedJoystick>();
 
@@ -47,11 +54,12 @@ public class PlayerController : MonoBehaviour
 
         dashHitboxRb = dashHitbox.GetComponent<Rigidbody>();
         dashDamage = dashHitbox.GetComponent<DashDamage>();
+
+        Debug.Log($"Initialised — Joystick: {joystick != null} | SwipeInput: {swipeInput != null} | DashIndicator: {dashIndicator != null}");
     }
 
     private void Start()
     {
-        // only self-initialise if not controlled by NetworkedPlayer
         if (GetComponent<NetworkedPlayer>() == null)
         {
             dashHitboxRb = dashHitbox.GetComponent<Rigidbody>();
@@ -59,49 +67,42 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // ── Update ─────────────────────────────────────────
+
     private void Update()
     {
         HandleDashCooldown();
 
         if (!isDashing)
-        {
             HandleMovement();
-        }
 
         HandleSwipeDash();
     }
 
     private void HandleDashCooldown()
     {
+        if (dashCooldownTimer <= 0) return;
 
-        if (dashCooldownTimer >= 0.0)
-        {
-            dashCooldownTimer -= Time.deltaTime;
+        dashCooldownTimer -= Time.deltaTime;
 
-            if (dashCooldownTimer < 0.0)
-            {
-                dashCooldownTimer = 0;
-            }
+        if (dashCooldownTimer < 0)
+            dashCooldownTimer = 0;
 
-            if (dashCooldownTimer > 0.0)
-            {
-                dashIndicator.SetReadyFalse();
-            }
-            else
-            {
-                dashCooldownTimer = 0;
-                dashIndicator.SetReadyTrue();
-            }
-            dashIndicator.SetText(dashCooldownTimer);
-        }
+        if (dashIndicator == null) return;
+
+        if (dashCooldownTimer > 0)
+            dashIndicator.SetReadyFalse();
+        else
+            dashIndicator.SetReadyTrue();
+
+        dashIndicator.SetText(dashCooldownTimer);
     }
 
     private void HandleSwipeDash()
     {
-        if (!swipeInput.SwipeDetected)
-            return;
+        if (swipeInput == null) return;
+        if (!swipeInput.SwipeDetected) return;
 
-        // Ignore swipe completely during cooldown
         if (dashCooldownTimer > 0 || isDashing)
         {
             swipeInput.ResetSwipe();
@@ -115,12 +116,13 @@ public class PlayerController : MonoBehaviour
         );
 
         StartCoroutine(Dash(dashDirection));
-
         swipeInput.ResetSwipe();
     }
 
     private void HandleMovement()
     {
+        if (joystick == null) return;
+
         float horizontal = joystick.Horizontal;
         float vertical = joystick.Vertical;
 
@@ -130,13 +132,13 @@ public class PlayerController : MonoBehaviour
             inputDirection.Normalize();
 
         Camera mainCamera = Camera.main;
+        if (mainCamera == null) return;
 
         Vector3 cameraForward = mainCamera.transform.forward;
         Vector3 cameraRight = mainCamera.transform.right;
 
         cameraForward.y = 0;
         cameraRight.y = 0;
-
         cameraForward.Normalize();
         cameraRight.Normalize();
 
@@ -149,18 +151,25 @@ public class PlayerController : MonoBehaviour
         if (moveDirection != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,
                 rotationSpeed * Time.deltaTime
             );
         }
+
+        if (animator != null)
+            animator.SetFloat("Speed", moveDirection.magnitude);
     }
 
-    private System.Collections.IEnumerator Dash(Vector3 direction)
+    // ── Dash ───────────────────────────────────────────
+
+    private IEnumerator Dash(Vector3 direction)
     {
         isDashing = true;
+
+        GetComponent<PlayerHealth>()?.SetInvulnerable(true);
+
         if (direction != Vector3.zero)
             transform.rotation = Quaternion.LookRotation(direction);
 
@@ -182,16 +191,14 @@ public class PlayerController : MonoBehaviour
             float t = elapsedTime / dashDuration;
             transform.position = Vector3.Lerp(startPosition, targetPosition, t);
             dashHitboxRb.MovePosition(transform.position);
-
-            // check for hits each frame using overlap
             CheckDashHits();
-
             yield return null;
         }
 
         characterController.enabled = true;
         dashCooldownTimer = dashCooldown;
         dashHitbox.enabled = false;
+        GetComponent<PlayerHealth>()?.SetInvulnerable(false);
         isDashing = false;
     }
 
@@ -207,12 +214,10 @@ public class PlayerController : MonoBehaviour
 
         foreach (Collider hit in hits)
         {
-            // compare actual GameObject instance not name
             if (hit.transform.root.gameObject == transform.root.gameObject)
                 continue;
 
             GameObject target = hit.transform.root.gameObject;
-
 
             if (dashDamage.AlreadyHit(target))
                 continue;
@@ -222,8 +227,6 @@ public class PlayerController : MonoBehaviour
             NetworkedHealth networkedHealth =
                 hit.GetComponentInParent<NetworkedHealth>();
             DummyHealth dummy = hit.GetComponentInParent<DummyHealth>();
-
-            Debug.Log($"Valid hit on: {hit.transform.root.name} | NetworkedHealth: {networkedHealth != null}");
 
             if (networkedHealth != null)
             {
